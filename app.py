@@ -44,8 +44,10 @@ state: dict = {}
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[startup] loading pipeline (indexes + models) ...")
-    state["pipeline"] = Pipeline(PROCESSED_DIR)
-    print(f"[startup] ready — {len(state['pipeline'].chunks_by_id)} chunks")
+    pipeline = Pipeline(PROCESSED_DIR)
+    pipeline.warmup()  # load embedding model now, off the first request's path
+    state["pipeline"] = pipeline
+    print(f"[startup] ready — {len(pipeline.chunks_by_id)} chunks")
     yield
     state.clear()
 
@@ -59,6 +61,7 @@ class AskRequest(BaseModel):
     k: int = Field(default=5, ge=1, le=20)
     provider: str = "ollama"
     expand: bool = False
+    filters: dict | None = None  # e.g. {"source": "CreatineResearchPaper.pdf"}
 
 
 class CompareRequest(BaseModel):
@@ -94,6 +97,7 @@ def ask(req: AskRequest) -> dict:
         k=req.k,
         provider_name=req.provider,
         expand=req.expand,
+        filters=req.filters,
     )
     payload = result.to_dict()
     _log(

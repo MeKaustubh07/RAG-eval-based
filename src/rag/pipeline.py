@@ -39,41 +39,82 @@ class Pipeline:
         # chunk_id → Chunk lookup, shared by all strategies.
         self.chunks_by_id = {chunk.id: chunk for chunk in self.dense.chunks}
 
+    def warmup(self) -> None:
+        """Force the embedding model to load now, not on the first user query.
+
+        The lazy singletons in embeddings.py/rerank.py mean the FIRST request
+        after startup pays the model-load cost (seconds). Calling this once at
+        API startup moves that cost off the critical path. Cheap insurance."""
+        self.dense.search("warmup", k=1)
+
+    def _passes_filter(self, chunk_id: str, filters: dict | None) -> bool:
+        """True if the chunk's metadata satisfies every filter (AND logic).
+
+        Supported keys: `source` (exact filename match), plus any key present
+        in chunk.metadata. Missing metadata key → chunk excluded. Kept simple:
+        equality only; ranges/operators would go here if the corpus grew."""
+        if not filters:
+            return True
+        chunk = self.chunks_by_id[chunk_id]
+        for key, wanted in filters.items():
+            have = chunk.source if key == "source" else chunk.metadata.get(key)
+            if have != wanted:
+                return False
+        return True
+
     def retrieve(
         self,
         query: str,
         strategy: str = "hybrid",
         k: int = 10,
         expand_with: LLMProvider | None = None,
+        filters: dict | None = None,
     ) -> list[tuple[str, float]]:
         """Return [(chunk_id, score)] best-first. Scores are only
         comparable WITHIN a strategy, never across strategies.
 
         If expand_with is given, generate query rephrasings, retrieve for
-        each, and RRF-fuse the lists (multi-query retrieval, Phase 7b)."""
+        each, and RRF-fuse the lists (multi-query retrieval, Phase 7b).
+        If filters is given, keep only chunks whose metadata matches
+        (metadata filtering, Phase 16)."""
         if expand_with is not None:
             queries = expand_query(query, expand_with)
-            lists = [self.retrieve(q, strategy=strategy, k=k) for q in queries]
+            lists = [self.retrieve(q, strategy=strategy, k=k, filters=filters) for q in queries]
             return reciprocal_rank_fusion(lists, top_n=k)
 
+        # Over-fetch when filtering so enough survive the filter to fill k.
+        fetch = k if not filters else k * 5
+
         if strategy == "dense":
-            return self.dense.search(query, k)
-
-        if strategy == "bm25":
-            return self.sparse.search(query, k)
-
-        if strategy == "hybrid":
-            return reciprocal_rank_fusion(
-                [self.dense.search(query, k * 2), self.sparse.search(query, k * 2)],
-                top_n=k,
+            results = self.dense.search(query, fetch)
+        elif strategy == "bm25":
+            results = self.sparse.search(query, fetch)
+        elif strategy == "hybrid":
+            results = reciprocal_rank_fusion(
+                [self.dense.search(query, fetch * 2), self.sparse.search(query, fetch * 2)],
+                top_n=fetch,
             )
+        else:
+            results = None  # rerank handled below (needs its own funnel)
+
+        if results is not None:
+            filtered = [(cid, s) for cid, s in results if self._passes_filter(cid, filters)]
+            return filtered[:k]
 
         if strategy == "rerank":
             fused = reciprocal_rank_fusion(
                 [self.dense.search(query, 20), self.sparse.search(query, 20)],
                 top_n=20,
             )
-            candidates = [self.chunks_by_id[chunk_id] for chunk_id, _ in fused]
+            # Filter candidates before the expensive cross-encoder — don't
+            # spend compute reranking chunks the filter will drop.
+            candidates = [
+                self.chunks_by_id[chunk_id]
+                for chunk_id, _ in fused
+                if self._passes_filter(chunk_id, filters)
+            ]
+            if not candidates:
+                return []
             reranked = cross_encoder_rerank(query, candidates, top_n=max(k, 10))
             survivors = [self.chunks_by_id[chunk_id] for chunk_id, _ in reranked]
             return mmr_select(query, survivors, k=k)
@@ -90,6 +131,7 @@ class Pipeline:
         k: int = 5,
         provider_name: str = "ollama",
         expand: bool = False,
+        filters: dict | None = None,
     ) -> "AnswerResult":
         """Full RAG: retrieve → generate grounded answer → return with trace.
 
@@ -100,7 +142,9 @@ class Pipeline:
         expand_with = provider if expand else None
 
         t0 = time.perf_counter()
-        retrieved = self.retrieve(question, strategy=strategy, k=k, expand_with=expand_with)
+        retrieved = self.retrieve(
+            question, strategy=strategy, k=k, expand_with=expand_with, filters=filters
+        )
         t1 = time.perf_counter()
 
         chunks = [self.get_chunk(chunk_id) for chunk_id, _ in retrieved]

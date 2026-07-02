@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+.github/
+data/raw/
+data/processed/
+data/logs.jsonl
+eval/
+tests/
+notebooks/
+.env
+*.md

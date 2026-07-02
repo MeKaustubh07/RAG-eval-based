@@ -1,0 +1,16 @@
+# Keep linting focused and beginner-friendly: catch real issues (unused
+# imports, undefined names, obvious bugs) without style bikeshedding.
+line-length = 100
+target-version = "py313"
+
+[lint]
+select = ["E", "F", "I", "W"]   # pycodestyle errors, pyflakes, import sort, warnings
+ignore = ["E501"]               # line-length handled above; don't fail long comments
+
+[lint.per-file-ignores]
+# Scripts and some tests insert the project root on sys.path BEFORE importing
+# src.* — a deliberate, well-known pattern that trips E402 (import-not-at-top).
+"scripts/*" = ["E402"]
+"eval/*" = ["E402"]
+"tests/conftest.py" = ["E402"]
+"tests/test_api.py" = ["E402"]

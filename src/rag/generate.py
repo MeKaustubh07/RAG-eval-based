@@ -32,8 +32,9 @@ from .chunking import Chunk
 
 load_dotenv()  # pull GEMINI_API_KEY from .env into os.environ
 
-OLLAMA_URL = "http://localhost:11434"
-OLLAMA_MODEL = "llama3.2"
+# Overridable so the Docker container can reach an Ollama on the host.
+OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2")
 GEMINI_MODEL = "gemini-2.5-flash"
 
 

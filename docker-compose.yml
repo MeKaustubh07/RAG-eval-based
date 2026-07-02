@@ -1,0 +1,20 @@
+# Local run: `docker compose up --build`
+#
+# The API container talks to an Ollama running on the HOST (installed via brew),
+# reached through host.docker.internal. The built index is mounted in read-only
+# so you rebuild it on the host (python scripts/build_index.py) and the
+# container just serves it.
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/processed:/app/data/processed:ro   # the FAISS index + chunks.json
+      - ./data:/app/data                          # writable, for logs.jsonl
+    environment:
+      # OllamaProvider reads this if set; falls back to localhost otherwise.
+      - OLLAMA_URL=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"       # Linux needs this mapping

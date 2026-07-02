@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      # Cache HuggingFace models so retrieval/regression tests don't re-download
+      # the embedding + cross-encoder every run.
+      - name: Cache HF models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-${{ hashFiles('requirements.txt') }}
+
+      - name: Install (CPU torch)
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu \
+                      --extra-index-url https://pypi.org/simple \
+                      -r requirements.txt
+
+      - name: Lint
+        run: ruff check src tests app.py
+
+      # Runs unit tests, retrieval integration tests, the API tests, AND the
+      # retrieval regression gate — all self-contained on the committed .md
+      # corpus, no PDFs, no live LLM.
+      - name: Test
+        run: pytest
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: lint-and-test          # only build the image if tests pass
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t rag-platform:ci .
