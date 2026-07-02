@@ -17,3 +17,4 @@ uvicorn>=0.32
 
 # Dev
 ipython                      # interactive experiments
+requests>=2.31
