@@ -1,5 +1,7 @@
 .venv/
 __pycache__/
+# research-paper PDFs: redistribution rights unclear, keep corpus local
+data/raw/*.pdf
 *.pyc
 data/processed/
 .DS_Store

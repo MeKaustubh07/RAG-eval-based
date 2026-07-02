@@ -225,6 +225,7 @@ any individual backend.
 | Semantic cache (embed query → cosine vs cached queries → return cached answer) | 2 h | neat systems idea, easy |
 | Deploy (Fly.io / Render, free tier) | 2-3 h | live URL on resume |
 | MCP server exposing retrieval | 3-4 h | timely, differentiating |
+| **Agentic retrieval with LangGraph** — LLM decides per-query: search docs vs SQL vs web, retries with reformulated query when results score low. Genuine graph-with-cycles territory, the honest slot for the LangGraph resume keyword (wrapping our linear pipeline in it would be cargo cult) | 4-6 h | agent orchestration + framework keyword, earned |
 | GraphRAG / multimodal / long-term memory | days each | separate projects, backlog |
 
 ## Deliberately cut (and why — say this in interviews)
