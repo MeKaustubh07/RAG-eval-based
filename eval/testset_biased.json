@@ -1,0 +1,162 @@
+[
+  {
+    "question": "Is it true that taking a certain amino acid supplement after physical exercise can activate key enzymes in protein synthesis?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:56"
+  },
+  {
+    "question": "Does milk contain enough leucine to promote maximal muscle protein synthesis (MPS) on its own?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:28"
+  },
+  {
+    "question": "Does leucine alone stimulate protein synthesis just as effectively as consuming all branched chain amino acids?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:6"
+  },
+  {
+    "question": "How do researchers distinguish between people who respond well to creatine supplementation and those who don't?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:28"
+  },
+  {
+    "question": "Does creatine supplementation have any effect on reducing oxidative damage in muscle cells?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:20"
+  },
+  {
+    "question": "Does creatine supplementation have a significant effect on predominantly aerobic endurance exercises lasting more than 150 seconds?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:15"
+  },
+  {
+    "question": "Does leucine play a direct role in stimulating protein synthesis in skeletal muscle after exercise?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:35"
+  },
+  {
+    "question": "Does a specific training protocol, including compound lifts with multiple sessions per week, need to last at least 10-12 weeks to be effective for increasing strength and muscle hypertrophy?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:26"
+  },
+  {
+    "question": "Can probiotics specifically help improve anaerobic performance markers such as maximal strength and power output?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:32"
+  },
+  {
+    "question": "Did consuming protein supplements before and after workouts lead to greater improvements in strength and body composition than consuming them at other times?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:22"
+  },
+  {
+    "question": "Does supplementation with whey protein improve muscle recovery after exercise?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:44"
+  },
+  {
+    "question": "How can proper carbohydrate intake help with glycogen replenishment?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:1"
+  },
+  {
+    "question": "What percentage of total energy intake does the average person need to consume according to this review?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:8"
+  },
+  {
+    "question": "How much leucine per serving is needed to promote maximal protein synthesis?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:7"
+  },
+  {
+    "question": "Did the researchers find that consuming a protein supplement before and after resistance training increased muscle hypertrophy in elderly men?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:23"
+  },
+  {
+    "question": "What effect does creatine supplementation have on muscle insulin-like growth factor (IGF-1) concentration when combined with heavy resistance training?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:13"
+  },
+  {
+    "question": "Does creatine supplementation have a positive effect on muscle glycogen accumulation when combined with a specific type of exercise?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:17"
+  },
+  {
+    "question": "How much carbohydrates should an athlete consume per hour during a 45-minute or less training session?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:22"
+  },
+  {
+    "question": "What is the main metabolic marker used to control the functional state of the body during the preparation of weightlifters?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:47"
+  },
+  {
+    "question": "How does retrieval in RAG help reduce hallucination?",
+    "expected_chunk_id": "rag_systems.md:0"
+  },
+  {
+    "question": "How do psychological stress and fatigue affect athletic performance?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:36"
+  },
+  {
+    "question": "Does creatine supplementation enhance performance in short-duration, anaerobic exercises?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:8"
+  },
+  {
+    "question": "How does BM25 scoring function handle repetition of words in a document?",
+    "expected_chunk_id": "bm25_and_sparse_retrieval.md:0"
+  },
+  {
+    "question": "When will the article be published?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:0"
+  },
+  {
+    "question": "Did an 8-week resistance training protocol with creatine supplementation lead to significant increases in muscle growth and hormone production compared to a placebo?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:14"
+  },
+  {
+    "question": "What specific areas of research have shown to be crucial for improving performance in weightlifting athletes?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:7"
+  },
+  {
+    "question": "Does consuming a carbohydrate-protein supplement after exercise improve muscle glycogen recovery?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:43"
+  },
+  {
+    "question": "Did the people who received creatine supplements have more muscle fibers that were type II than those who didn't receive any?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:29"
+  },
+  {
+    "question": "Is consuming a specific amount of leucine (3-4 grams) necessary to promote maximum protein synthesis?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:1"
+  },
+  {
+    "question": "Does whey protein ingestion stimulate muscle protein synthesis before exercise?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:40"
+  },
+  {
+    "question": "Does caffeine affect endurance performance in athletes?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:60"
+  },
+  {
+    "question": "Does creatine supplementation have any negative effects on athletes, such as dehydration or heat intolerance?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:45"
+  },
+  {
+    "question": "Does caffeine have a direct impact on endurance performance in athletes?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:61"
+  },
+  {
+    "question": "Does milk protein promote greater muscle growth after exercise compared to soy protein?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:39"
+  },
+  {
+    "question": "Does using a system that rewards systems that put the right passage first improve retrieval quality?",
+    "expected_chunk_id": "rag_systems.md:2"
+  },
+  {
+    "question": "Does long-term creatine consumption have any negative health effects?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:44"
+  },
+  {
+    "question": "How does BM25 handle queries that contain technical terms or jargon?",
+    "expected_chunk_id": "bm25_and_sparse_retrieval.md:1"
+  },
+  {
+    "question": "Does beta-alanine supplementation increase muscle carnosine concentrations?",
+    "expected_chunk_id": "WeighliftingResearch.pdf:57"
+  },
+  {
+    "question": "Does creatine supplementation have any effect on human muscle protein turnover?",
+    "expected_chunk_id": "CreatineResearchPaper.pdf:55"
+  },
+  {
+    "question": "Does taking a certain type of protein before and after resistance training have to include a specific amount of another amino acid for it to be effective?",
+    "expected_chunk_id": "1550-2783-9-54 (1).pdf:24"
+  }
+]

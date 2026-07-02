@@ -24,6 +24,7 @@ import argparse
 import json
 import random
 import sys
+import time
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parents[1]
@@ -32,15 +33,21 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.rag.chunking import Chunk
 from src.rag.generate import get_provider
 
-QUESTION_PROMPT = """You are building retrieval test data.
+QUESTION_PROMPT = """You are building retrieval test data that must NOT leak vocabulary.
 
 Read this passage and write ONE specific question that the passage answers.
 
-Rules:
-- The question must be answerable from this passage alone.
-- Phrase it the way a curious person would ask, in their own words — do NOT copy distinctive phrases from the passage.
+CRITICAL rule — paraphrase, do not echo:
+- A real user asking this question has NOT read the passage and does not know
+  its technical terms. Ask the way a curious non-expert would.
+- Replace technical/rare words with everyday synonyms. Examples:
+  "phosphocreatine resynthesis" -> "how muscles recharge energy between sets";
+  "muscle carnosine concentration" -> "a buffer that reduces muscle burn";
+  "reciprocal rank fusion" -> "combining two search result lists".
+- Do NOT copy any distinctive noun phrase from the passage verbatim.
 - Do not mention "the passage", "the text", "the study", or "the author".
-- Output ONLY the question, nothing else.
+
+Output ONLY the question, nothing else.
 
 Passage:
 {chunk_text}"""
@@ -53,6 +60,8 @@ def main() -> None:
     parser.add_argument("--provider", choices=["ollama", "gemini"], default="ollama")
     parser.add_argument("--n", type=int, default=40)
     parser.add_argument("--seed", type=int, default=42)  # same seed = same testset
+    parser.add_argument("--sleep", type=float, default=0.0,
+                        help="seconds between calls — set ~4 for Gemini free tier")
     args = parser.parse_args()
 
     with open(PROJECT_ROOT / "data" / "processed" / "chunks.json") as f:
@@ -66,6 +75,8 @@ def main() -> None:
     provider = get_provider(args.provider)
     testset = []
     for i, chunk in enumerate(sampled, start=1):
+        if args.sleep and i > 1:
+            time.sleep(args.sleep)  # respect free-tier requests-per-minute
         question = provider.generate(QUESTION_PROMPT.format(chunk_text=chunk.text))
         # Models sometimes wrap output in quotes or add a label — strip both.
         question = question.strip().strip('"').removeprefix("Question:").strip()
