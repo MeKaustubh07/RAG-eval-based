@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RAG Platform — A/B Retrieval Comparison</title>
+<style>
+  :root { --bg:#0f1117; --panel:#181b24; --border:#2a2f3a; --text:#e6e8ec;
+          --muted:#9aa3b2; --accent:#6ea8fe; --good:#4ade80; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.55 system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:20px 28px; border-bottom:1px solid var(--border); }
+  h1 { margin:0; font-size:19px; } h1 span { color:var(--accent); }
+  .sub { color:var(--muted); font-size:13px; margin-top:4px; }
+  .controls { padding:20px 28px; display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .controls label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); }
+  input, select { background:var(--panel); border:1px solid var(--border); color:var(--text);
+                  padding:9px 11px; border-radius:8px; font-size:14px; }
+  #question { min-width:min(520px, 80vw); }
+  button { background:var(--accent); color:#08101f; border:0; padding:10px 20px;
+           border-radius:8px; font-weight:600; cursor:pointer; font-size:14px; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; padding:8px 28px 40px; }
+  @media (max-width: 860px){ .grid{ grid-template-columns:1fr; } }
+  .panel { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px; }
+  .panel h2 { margin:0 0 4px; font-size:14px; text-transform:uppercase; letter-spacing:.5px; color:var(--accent); }
+  .metrics { display:flex; gap:16px; flex-wrap:wrap; margin:10px 0 14px; font-size:12px; color:var(--muted); }
+  .metrics b { color:var(--text); font-weight:600; }
+  .answer { white-space:pre-wrap; background:#11141c; border:1px solid var(--border);
+            border-radius:8px; padding:12px; font-size:14px; }
+  .sources { margin-top:14px; }
+  details { border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:#11141c; }
+  summary { cursor:pointer; padding:9px 12px; font-size:13px; }
+  summary .cited { color:var(--good); font-weight:600; }
+  details p { margin:0; padding:0 12px 12px; color:var(--muted); font-size:13px; }
+  .src-tag { font-size:11px; color:var(--muted); }
+  .empty { color:var(--muted); padding:20px; text-align:center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>RAG Platform — <span>A/B Retrieval Comparison</span></h1>
+  <div class="sub">Same question, two strategies, side by side. Compare answer, sources, and latency.</div>
+</header>
+
+<div class="controls">
+  <label>Question
+    <input id="question" placeholder="e.g. does creatine cause dehydration?" />
+  </label>
+  <label>Strategy A
+    <select id="stratA"></select>
+  </label>
+  <label>Strategy B
+    <select id="stratB"></select>
+  </label>
+  <label>Provider
+    <select id="provider"><option value="ollama">ollama (local)</option><option value="gemini">gemini</option></select>
+  </label>
+  <button id="run">Compare</button>
+</div>
+
+<div class="grid">
+  <div class="panel" id="panelA"><h2 id="titleA">Strategy A</h2><div class="empty">Ask a question to begin.</div></div>
+  <div class="panel" id="panelB"><h2 id="titleB">Strategy B</h2><div class="empty">Ask a question to begin.</div></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+async function init() {
+  const health = await fetch("/health").then(r => r.json());
+  for (const sel of [$("stratA"), $("stratB")]) {
+    sel.innerHTML = health.strategies.map(s => `<option value="${s}">${s}</option>`).join("");
+  }
+  $("stratA").value = "dense";
+  $("stratB").value = "rerank";
+}
+
+function renderPanel(panelId, titleId, strategy, data) {
+  $(titleId).textContent = strategy;
+  const t = data.trace;
+  const cited = new Set(data.citations);       // source numbers actually cited
+  const sources = data.chunks.map((c, i) => {
+    const n = i + 1;
+    const isCited = cited.has(n);
+    return `<details ${isCited ? "open" : ""}>
+      <summary>[Source ${n}] <span class="src-tag">${c.source}</span>
+        ${isCited ? '<span class="cited">✓ cited</span>' : ""}</summary>
+      <p>${c.text.slice(0, 500).replace(/</g, "&lt;")}…</p>
+    </details>`;
+  }).join("");
+
+  $(panelId).innerHTML = `<h2>${strategy}</h2>
+    <div class="metrics">
+      <span>retrieval <b>${t.retrieval_ms} ms</b></span>
+      <span>generation <b>${t.generation_ms} ms</b></span>
+      <span>total <b>${t.total_ms} ms</b></span>
+      <span>~tokens <b>${t.approx_prompt_tokens}+${t.approx_completion_tokens}</b></span>
+    </div>
+    <div class="answer">${data.answer.replace(/</g, "&lt;")}</div>
+    <div class="sources">${sources}</div>`;
+}
+
+async function run() {
+  const question = $("question").value.trim();
+  if (question.length < 3) return;
+  const btn = $("run");
+  btn.disabled = true; btn.textContent = "Running…";
+  for (const p of ["panelA", "panelB"]) $(p).innerHTML = '<div class="empty">Retrieving + generating…</div>';
+  try {
+    const res = await fetch("/compare", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        question,
+        strategy_a: $("stratA").value,
+        strategy_b: $("stratB").value,
+        provider: $("provider").value,
+        k: 5
+      })
+    }).then(r => r.json());
+    renderPanel("panelA", "titleA", $("stratA").value, res.a);
+    renderPanel("panelB", "titleB", $("stratB").value, res.b);
+  } catch (e) {
+    for (const p of ["panelA", "panelB"]) $(p).innerHTML = `<div class="empty">Error: ${e}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Compare";
+  }
+}
+
+$("run").addEventListener("click", run);
+$("question").addEventListener("keydown", e => { if (e.key === "Enter") run(); });
+init();
+</script>
+</body>
+</html>
