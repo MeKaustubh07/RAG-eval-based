@@ -135,6 +135,7 @@ uvicorn app:app --reload      # → http://localhost:8000
 | `GET /health` | liveness + index size |
 | `POST /ask` | `{question, strategy, k, provider, expand, filters}` → answer + citations + chunks + trace |
 | `POST /compare` | same query through two strategies (powers the A/B UI) |
+| `POST /agent` | self-correcting agentic retrieval (LangGraph) → answer + decision trace |
 
 ---
 
@@ -177,6 +178,17 @@ PLAN.md      full phase-by-phase build roadmap
 ```
 
 ---
+
+## Advanced features
+
+| Feature | Where | What it shows |
+|---|---|---|
+| **Agentic retrieval** (LangGraph) | `src/rag/agent.py`, `POST /agent` | self-correcting graph: route → retrieve → grade → reformulate + retry → generate; rejects out-of-scope queries |
+| **Pluggable vector DB** | `src/rag/vector_index.py`, `qdrant_index.py` | `VECTOR_BACKEND=faiss\|qdrant` — same interface, FAISS in-process or Qdrant service |
+| **Semantic cache** | `src/rag/cache.py` | near-paraphrase questions skip the pipeline (0 ms), scoped per strategy |
+| **MCP server** | `mcp_server.py` | exposes `rag_search` / `rag_answer` as tools for any MCP client (Claude Desktop, IDE agents) |
+| **React + TypeScript UI** | `frontend-react/` | typed full-stack port of the A/B comparison UI (Vite) |
+| **Deploy** | `Dockerfile.deploy`, `fly.toml`, `DEPLOY.md` | Fly.io, Gemini-backed, index baked into the image |
 
 ## What this demonstrates
 
