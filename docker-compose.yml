@@ -11,10 +11,26 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data/processed:/app/data/processed:ro   # the FAISS index + chunks.json
+      - ./data/processed:/app/data/processed:ro   # index + chunks.json
       - ./data:/app/data                          # writable, for logs.jsonl
     environment:
       # OllamaProvider reads this if set; falls back to localhost otherwise.
       - OLLAMA_URL=http://host.docker.internal:11434
+      # Flip to "qdrant" (and run index_qdrant.py) to use the vector DB.
+      - VECTOR_BACKEND=${VECTOR_BACKEND:-faiss}
+      - QDRANT_URL=http://qdrant:6333
     extra_hosts:
       - "host.docker.internal:host-gateway"       # Linux needs this mapping
+    depends_on:
+      - qdrant
+
+  # Real vector DB. Only used when VECTOR_BACKEND=qdrant; harmless otherwise.
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+volumes:
+  qdrant_storage:

@@ -23,19 +23,21 @@ from pathlib import Path
 
 from .cache import SemanticCache
 from .chunking import Chunk
-from .dense_index import DenseIndex
 from .expansion import expand_query
 from .generate import LLMProvider, generate_answer, get_provider
 from .hybrid import reciprocal_rank_fusion
 from .rerank import cross_encoder_rerank, mmr_select
 from .sparse_index import SparseIndex
+from .vector_index import load_vector_index
 
 STRATEGIES = ["dense", "bm25", "hybrid", "rerank"]
 
 
 class Pipeline:
     def __init__(self, processed_dir: str | Path):
-        self.dense = DenseIndex.load(processed_dir)
+        # Backend chosen by VECTOR_BACKEND env (faiss default, qdrant optional)
+        # — pipeline code below never mentions the concrete store.
+        self.dense = load_vector_index(processed_dir)
         self.sparse = SparseIndex.load(processed_dir)
         # chunk_id → Chunk lookup, shared by all strategies.
         self.chunks_by_id = {chunk.id: chunk for chunk in self.dense.chunks}
