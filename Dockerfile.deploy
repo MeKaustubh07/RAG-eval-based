@@ -1,0 +1,44 @@
+# Deploy image for Fly.io / Render — single self-contained container.
+#
+# Differences from the base Dockerfile:
+#   - bakes the prebuilt FAISS index (data/processed) INTO the image, so there's
+#     no volume to mount and no host dependency,
+#   - defaults to the Gemini provider (there is no Ollama in the cloud).
+#
+# Build context uses Dockerfile.deploy.dockerignore, which (unlike the base
+# .dockerignore) KEEPS data/processed so it can be copied in.
+#
+# Prereq: run `python scripts/build_index.py` locally first so data/processed
+# exists, then `fly deploy`.
+
+FROM python:3.13-slim AS builder
+WORKDIR /app
+ENV PIP_INDEX_URL=https://download.pytorch.org/whl/cpu \
+    PIP_EXTRA_INDEX_URL=https://pypi.org/simple
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+
+FROM python:3.13-slim AS runtime
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /install /usr/local
+COPY src/ ./src/
+COPY app.py ./
+# Bake the prebuilt index (data/processed) into the image — no volume needed.
+COPY frontend/ ./frontend/
+COPY data/processed/ ./data/processed/
+
+# Bake the embedding + cross-encoder models into the image.
+RUN python -c "from sentence_transformers import SentenceTransformer, CrossEncoder; \
+    SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2'); \
+    CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')"
+
+ENV VECTOR_BACKEND=faiss \
+    DEFAULT_PROVIDER=gemini
+
+EXPOSE 8000
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

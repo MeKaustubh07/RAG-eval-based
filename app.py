@@ -23,6 +23,7 @@ LESSON
 from __future__ import annotations
 
 import json
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -56,12 +57,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="RAG Platform", version="1.0", lifespan=lifespan)
 
+# Default LLM provider: "ollama" locally, "gemini" in the cloud (no Ollama there).
+# Set DEFAULT_PROVIDER=gemini as a Fly secret on the deployed instance.
+DEFAULT_PROVIDER = os.environ.get("DEFAULT_PROVIDER", "ollama")
+
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=3, max_length=1000)
     strategy: str = "rerank"
     k: int = Field(default=5, ge=1, le=20)
-    provider: str = "ollama"
+    provider: str = DEFAULT_PROVIDER
     expand: bool = False
     filters: dict | None = None  # e.g. {"source": "CreatineResearchPaper.pdf"}
 
@@ -71,7 +76,7 @@ class CompareRequest(BaseModel):
     strategy_a: str = "dense"
     strategy_b: str = "rerank"
     k: int = Field(default=5, ge=1, le=20)
-    provider: str = "ollama"
+    provider: str = DEFAULT_PROVIDER
 
 
 def _log(record: dict) -> None:

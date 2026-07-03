@@ -1,0 +1,15 @@
+# Scoped ignore for the deploy build — KEEPS data/processed (the index) so it
+# can be baked into the image, unlike the base .dockerignore.
+.venv/
+__pycache__/
+*.pyc
+.git/
+.github/
+frontend-react/node_modules/
+frontend-react/dist/
+data/raw/
+data/logs.jsonl
+eval/
+tests/
+notebooks/
+.env
