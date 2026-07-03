@@ -47,6 +47,8 @@ async def lifespan(app: FastAPI):
     pipeline = Pipeline(PROCESSED_DIR)
     pipeline.warmup()  # load embedding model now, off the first request's path
     state["pipeline"] = pipeline
+    from src.rag.agent import Agent
+    state["agent"] = Agent(pipeline)
     print(f"[startup] ready — {len(pipeline.chunks_by_id)} chunks")
     yield
     state.clear()
@@ -134,6 +136,19 @@ def compare(req: CompareRequest) -> dict:
         }
     )
     return results
+
+
+class AgentRequest(BaseModel):
+    question: str = Field(min_length=3, max_length=1000)
+
+
+@app.post("/agent")
+def agent(req: AgentRequest) -> dict:
+    """Self-correcting agentic retrieval — routes, grades, retries, generates."""
+    result = state["agent"].run(req.question)
+    _log({"mode": "agent", "question": req.question,
+          "attempts": result["attempts"], "trace": result["trace"]})
+    return result
 
 
 @app.get("/")
