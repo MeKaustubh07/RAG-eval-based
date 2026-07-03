@@ -21,6 +21,7 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from .cache import SemanticCache
 from .chunking import Chunk
 from .dense_index import DenseIndex
 from .expansion import expand_query
@@ -38,6 +39,7 @@ class Pipeline:
         self.sparse = SparseIndex.load(processed_dir)
         # chunk_id → Chunk lookup, shared by all strategies.
         self.chunks_by_id = {chunk.id: chunk for chunk in self.dense.chunks}
+        self.cache = SemanticCache()
 
     def warmup(self) -> None:
         """Force the embedding model to load now, not on the first user query.
@@ -132,12 +134,29 @@ class Pipeline:
         provider_name: str = "ollama",
         expand: bool = False,
         filters: dict | None = None,
+        use_cache: bool = True,
     ) -> "AnswerResult":
         """Full RAG: retrieve → generate grounded answer → return with trace.
 
         The trace captures per-stage latency and token proxies — this is the
         observability data the API logs and the frontend's latency panel shows.
+
+        A semantic-cache hit (a near-paraphrase of an earlier question) skips
+        the whole pipeline and returns the stored answer in milliseconds.
+        Cache is bypassed when filters/expansion are set — those change results,
+        so a plain-question cache entry wouldn't be valid for them.
         """
+        cacheable = use_cache and not filters and not expand
+        scope = f"{strategy}:{k}:{provider_name}"  # answers differ across these
+        if cacheable:
+            hit = self.cache.get(question, scope=scope)
+            if hit is not None:
+                payload, similarity = hit
+                cached = AnswerResult(**payload)
+                cached.trace = {**cached.trace, "cache_hit": True,
+                                "cache_similarity": round(similarity, 3), "total_ms": 0.0}
+                return cached
+
         provider = get_provider(provider_name)
         expand_with = provider if expand else None
 
@@ -154,7 +173,7 @@ class Pipeline:
         # Map cited source numbers ([1]-based) back to real chunk IDs.
         cited_ids = [chunks[n - 1].id for n in answer.citations if n <= len(chunks)]
 
-        return AnswerResult(
+        result = AnswerResult(
             question=question,
             strategy=strategy,
             provider=provider_name,
@@ -174,8 +193,12 @@ class Pipeline:
                 "completion_chars": answer.completion_chars,
                 "approx_prompt_tokens": answer.prompt_chars // 4,  # ~4 chars/token
                 "approx_completion_tokens": answer.completion_chars // 4,
+                "cache_hit": False,
             },
         )
+        if cacheable:
+            self.cache.put(question, result.to_dict(), scope=scope)
+        return result
 
 
 @dataclass
