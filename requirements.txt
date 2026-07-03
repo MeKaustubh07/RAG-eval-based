@@ -29,3 +29,6 @@ qdrant-client>=1.7
 
 # Agentic retrieval
 langgraph>=0.2
+
+# MCP server
+mcp[cli]>=1.2
